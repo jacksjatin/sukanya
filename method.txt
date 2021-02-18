@@ -1,0 +1,61 @@
+private void NotesFunc(Dictionary<int, string> noteItemsDict, WebItemV2 result)
+        {
+            string unitXml = "";
+            string model = "";
+            var modelOptions = result.Xml.TryGetValue("Assignments", out unitXml);
+            result.Xml.TryGetValue("Model", out model);
+
+            Series100ModelDTO config = RestoreUnitConfig(unitXml, ModelsUtility.ModelFromString(model));
+
+            notes = null;
+            notes = _notesDataProvider.GetNotes(model);
+            notesSche = null;
+            notesSche = _notesDataProvider.GetNoteSheData(model);
+            notesList = null;
+            notesList = _notesDataProvider.GetNotesListData(model);
+            notesAsoc = null;
+            notesAsoc = _notesDataProvider.GetNotesAsocListData(model);
+            string valuetoSplit = "";
+            int noteId = 0;
+
+            //Iterating each model options
+            foreach (var value in config.DisplayVariables)
+            {
+               if (value != null && value.Key != null && value.AssignedValue != null && value.AssignedValue.Trim() != "" && value.AssignedValue.ToLower() != "false")
+                {
+                    //filter from notelist
+                    var noteList = notesList.Where(p => p.DataValue == value.Key.ToString());
+                    if (notesList != null && noteList.Count() > 0)
+                    {
+                        foreach (var note in noteList)
+                        {
+                            if(note.DataType == "A")
+                            {
+
+                            }
+
+
+                            var assignedValue = _objectMapper.GetElementValue(note.DataValue + "@Selected", "GET_SELCHILDREN").Split('.').Last();
+                            //if(assignedValue == "FLT")
+                            //{
+                            //    Console.Write("debug");
+                            //}
+                            var noteIds = notesSche.Where(p => p.NoteKey == note.DataValue && p.OptKey.ToUpper() == assignedValue.ToUpper())
+                                .Select(x => x.NoteId);
+
+
+                           foreach(var id in noteIds)
+                            {
+                                var desc = notes.Where(x => x.NoteId.Equals(id)).FirstOrDefault().NoteText;
+
+                                if (!noteItemsDict.ContainsKey(id))
+                                {
+                                    noteItemsDict.Add(id, desc);
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
